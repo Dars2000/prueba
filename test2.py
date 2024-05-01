@@ -8,21 +8,19 @@ from rknnlite.api import RKNNLite
 MODEL_FILE = 'mobilenet_v2_for_rk3566_rk3568.rknn'
 VIDEO_FILE = 'carros.mp4'
 
-# Función para mostrar las mejores 5 predicciones
-def show_top5(result):
-    output = result[0].reshape(-1)
-    # Obtener los índices de los 5 valores más grandes
-    output_sorted_indices = np.argsort(output)[::-1][:5]
-    top5_str = '-----TOP 5-----\n'
-    for i, index in enumerate(output_sorted_indices):
-        value = output[index]
-        if value > 0:
-            topi = '[{:>3d}] score:{:.6f} class:"{}"\n'.format(
-                index, value, labels[index])
-        else:
-            topi = '-1: 0.0\n'
-        top5_str += topi
-    print(top5_str)
+# Índice de la clase "carro"
+CAR_CLASS_INDEX = 672
+
+# Función para mostrar los rectángulos de detección y etiquetas
+def draw_detections(frame, detections):
+    for detection in detections:
+        class_id, score, x, y, w, h = detection
+        if class_id == CAR_CLASS_INDEX:
+            # Dibujar rectángulo de detección
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            # Mostrar etiqueta
+            label = '{}: {:.2f}'.format(labels[class_id], score)
+            cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
 if __name__ == '__main__':
     # Inicializar RKNNLite
@@ -62,10 +60,18 @@ if __name__ == '__main__':
         # Realizar la inferencia
         outputs = rknn_lite.inference(inputs=[input_img], data_format=['nchw'])
 
-        # Mostrar resultados
-        show_top5(outputs)
+        # Filtrar las detecciones de vehículos
+        detections = []
+        for output in outputs:
+            for detection in output:
+                class_id, score, x, y, w, h = detection
+                if class_id == CAR_CLASS_INDEX and score > 0.5:  # Filtro de umbral de confianza
+                    detections.append(detection)
 
-        # Mostrar el fotograma con las predicciones
+        # Dibujar rectángulos de detección y etiquetas
+        draw_detections(frame, detections)
+
+        # Mostrar el fotograma con las detecciones
         cv2.imshow('Frame', frame)
         
         # Salir del bucle al presionar 'q'
