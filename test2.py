@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
-from rknn.api import RKNN
+from synset_label import labels
+from rknnlite.api import RKNNLite
 
 # Rutas de los archivos
 MODEL_FILE = 'yolov5.rknn'
@@ -19,16 +20,16 @@ def draw_detections(frame, detections):
         # Dibujar rectángulo de detección
         cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
         # Mostrar etiqueta
-        label = 'Clase: {} - Confianza: {:.2f}'.format(class_id, score)
+        label = '{}: {:.2f}'.format(labels[class_id], score)
         cv2.putText(frame, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
 if __name__ == '__main__':
-    # Inicializar RKNN
-    rknn = RKNN()
+    # Inicializar RKNNLite
+    rknn_lite = RKNNLite()
 
     # Cargar el modelo RKNN
     print('--> Cargando modelo RKNN')
-    ret = rknn.load_rknn(MODEL_FILE)
+    ret = rknn_lite.load_rknn(MODEL_FILE)
     if ret != 0:
         print('Error al cargar el modelo RKNN')
         exit(ret)
@@ -49,7 +50,7 @@ if __name__ == '__main__':
         input_img = input_img / 255.0  # Normalizar
 
         # Realizar la inferencia
-        outputs = rknn.inference(inputs=[input_img])
+        outputs = rknn_lite.inference(inputs=[input_img], data_format=['nhwc'])
 
         # Procesar las detecciones
         detections = []
@@ -71,4 +72,4 @@ if __name__ == '__main__':
     # Liberar recursos
     cap.release()
     cv2.destroyAllWindows()
-    rknn.release()
+    rknn_lite.release()
