@@ -68,6 +68,9 @@ if __name__ == '__main__':
                 if class_id == CAR_CLASS_INDEX and score > 0.5:  # Filtro de umbral de confianza
                     detections.append(detection)
 
+        # Imprimir las detecciones
+        print("Detecciones:", detections)
+
         # Dibujar rectángulos de detección y etiquetas
         draw_detections(frame, detections)
 
