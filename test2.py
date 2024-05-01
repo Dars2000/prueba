@@ -35,6 +35,14 @@ if __name__ == '__main__':
         exit(ret)
     print('Hecho')
 
+    # Inicializar entorno de ejecución
+    print('--> Inicializando entorno de ejecución')
+    ret = rknn_lite.init_runtime()
+    if ret != 0:
+        print('Error al inicializar el entorno de ejecución')
+        exit(ret)
+    print('Hecho')
+
     # Inicializar captura de video
     cap = cv2.VideoCapture(VIDEO_FILE)
 
