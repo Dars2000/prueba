@@ -1,36 +1,30 @@
 import cv2
 import numpy as np
-import platform
-from synset_label import labels
 from rknnlite.api import RKNNLite
 
 # Rutas de los archivos
-MODEL_FILE = 'mobilenet_v2_for_rk3566_rk3568.rknn'
+MODEL_FILE = 'yolov5s_relu.onnx'
 VIDEO_FILE = 'carros.mp4'
-
-# Índice de la clase "carro"
-CAR_CLASS_INDEX = 672
 
 # Función para mostrar los rectángulos de detección y etiquetas
 def draw_detections(frame, detections):
     for detection in detections:
         class_id, score, x, y, w, h = detection
-        if class_id == CAR_CLASS_INDEX:
-            # Dibujar rectángulo de detección
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            # Mostrar etiqueta
-            label = '{}: {:.2f}'.format(labels[class_id], score)
-            cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        # Dibujar rectángulo de detección
+        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+        # Mostrar etiqueta
+        label = '{}: {:.2f}'.format(class_id, score)
+        cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
 if __name__ == '__main__':
     # Inicializar RKNNLite
     rknn_lite = RKNNLite()
 
-    # Cargar el modelo RKNN
-    print('--> Cargando modelo RKNN')
-    ret = rknn_lite.load_rknn(MODEL_FILE)
+    # Cargar el modelo ONNX
+    print('--> Cargando modelo ONNX')
+    ret = rknn_lite.load_onnx(MODEL_FILE)
     if ret != 0:
-        print('Error al cargar el modelo RKNN')
+        print('Error al cargar el modelo ONNX')
         exit(ret)
     print('Hecho')
 
@@ -53,23 +47,19 @@ if __name__ == '__main__':
             break
 
         # Preprocesar el fotograma
-        input_img = cv2.resize(frame, (224, 224))
+        input_img = cv2.resize(frame, (640, 640))
         input_img = np.expand_dims(input_img, 0)
-        input_img = np.transpose(input_img, (0, 3, 1, 2))
 
         # Realizar la inferencia
-        outputs = rknn_lite.inference(inputs=[input_img], data_format=['nchw'])
+        outputs = rknn_lite.inference(inputs=[input_img])
 
-        # Filtrar las detecciones de vehículos
+        # Filtrar las detecciones con confianza mayor a 0.5
         detections = []
         for output in outputs:
             for detection in output:
                 class_id, score, x, y, w, h = detection
-                if class_id == CAR_CLASS_INDEX and score > 0.5:  # Filtro de umbral de confianza
+                if score > 0.5:
                     detections.append(detection)
-
-        # Imprimir las detecciones
-        print("Detecciones:", detections)
 
         # Dibujar rectángulos de detección y etiquetas
         draw_detections(frame, detections)
